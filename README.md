@@ -1,1 +1,1 @@
-# Thesis_open
+# Thesis
