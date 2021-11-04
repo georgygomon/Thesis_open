@@ -4,6 +4,7 @@ library(lme4)
 library(nlme)
 library(MCMCglmm)
 library(MCMCvis)
+library(optimx)
 
 
 ################################################################################
@@ -26,7 +27,7 @@ coefficients_2c2<-list(coefficients=data.frame(true= c(true_betas),
 rownames(coefficients_2c2$coefficients)<-c( 'beta_0^1', 'beta_x^1','beta_t^1', 'beta_0^2', 'beta_x^2','beta_t^2')
 
 ################################################################################
-#Model 2 Make data: Dependent Random Slope and Intercept
+#Model 2 Make data: Dependent Slope and Intercept!!
 ################################################################################
 set.seed(2022)
 ### Total of N individuals
@@ -156,4 +157,9 @@ coefficients_2c2$VarCov$INLA<-diag(SD_s) %*% cor %*% diag(SD_s)
 
 
 coefficients_2c2
+
+# final_model_2c2$mlik
+# final_model_2c2$dic$dic
+# final_model_2c2$waic$waic
+# final_model_2c2$cpo
 

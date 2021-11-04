@@ -12,136 +12,167 @@ library(MCMCvis)
 library(MASS)
 library(mvtnorm)
 library(xtable)
+library(Rlab)
+library(dgof)
 
-make_model_0<-function(true_betas, U1, U2, N, n){
+make_model_0<-function(true_betas, parameters, N, n, p1, p2, CV){
+  set.seed(2022+CV)
   data_0 <- data.frame(
     id=rep(1:N, each=n),
     x=rnorm(N*n),
     Period=rep(0:(n-1), times=N), 
-    Period2=factor(rep(0:(n-1), times=N)))
+    Period2=factor(rep(0:(n-1), times=N)),
+    observed=rbern(N*n, p1),
+    x_measured=rbern(N*n, p2))
   errors1 <- matrix(rnorm(N*n), N)
   errors2 <- matrix(rnorm(N*n), N)
-  u1<-matrix(rnorm(N*2), N) %*% chol(U1)
-  u2<-matrix(rnorm(N*2), N) %*% chol(U2)
+  u1<-matrix(rnorm(N*2), N) %*% chol(parameters$U1)
+  u2<-matrix(rnorm(N*2), N) %*% chol(parameters$U2)
   data_0$y1 <-  true_betas[1]+rep(u1[,1], each=n)+true_betas[2]*data_0$x+(true_betas[3]+rep(u1[,2], each=n))*data_0$Period+as.vector(t(errors1))
   data_0$y2 <- true_betas[4]+rep(u2[,1], each=n)+true_betas[5]*data_0$x+(true_betas[6]+rep(u2[,2], each=n))*data_0$Period+as.vector(t(errors2))
-  return(list(data=data_0, true_cov_1=cov(u1), true_cov_2=cov(u2)))
+  data_0$x[data_0$x_measured==0]<-NA
+  data<-data_0[data_0$observed==1,]
+  return(list(data=data, true_cov_1=cov(u1), true_cov_2=cov(u2)))
 }
 
-make_model_1A<-function(true_betas, Sigma, N, n){
+make_model_1A<-function(true_betas, parameters, N, n, p1, p2, CV){
   ################################################################################
   #Only Errors dependent
   ################################################################################
-  set.seed(2022)
-  data<- data.frame(
+  set.seed(2022+CV)
+  data <- data.frame(
     id=rep(1:N, each=n),
-    x=rnorm(N*n), 
+    x=rnorm(N*n),
     Period=rep(0:(n-1), times=N), 
-    Period2=factor(rep(0:(n-1), times=N)))
+    Period2=factor(rep(0:(n-1), times=N)),
+    observed=rbern(N*n, p1),
+    x_measured=rbern(N*n, p2))
   
-  errors <- matrix(rnorm(N*2*n), N) %*% chol(Sigma)
+  errors <- matrix(rnorm(N*2*n), N) %*% chol(parameters$Sigma)
   data$y1 <- true_betas[1] + true_betas[2]*data$x + true_betas[3]*data$Period+ as.vector(t(errors[,1:n]))
   data$y2<- true_betas[4]+true_betas[5]*data$x+ true_betas[6]*data$Period+ as.vector(t(errors[,(n+1):(2*n)]))
+  data$x[data$x_measured==0]<-NA
+  data<-data[data$observed==1,]
   return(list(data=data, true_errors=cov(errors)))
 }
 
-make_model_2A<-function(true_betas, U, N, n){
+make_model_2A<-function(true_betas, parameters, N, n, p1, p2, CV){
   ################################################################################
   #Only Random intercept
   ################################################################################
-  set.seed(2022)
-  data_2a<- data.frame(
+  set.seed(2022+CV)
+  data_2a <- data.frame(
     id=rep(1:N, each=n),
-    x=rnorm(N*n), 
+    x=rnorm(N*n),
     Period=rep(0:(n-1), times=N), 
-    Period2=factor(rep(0:(n-1), times=N)))
+    Period2=factor(rep(0:(n-1), times=N)),
+    observed=rbern(N*n, p1),
+    x_measured=rbern(N*n, p2))
   
   errors1 <- matrix(rnorm(N*n), N)
   errors2 <- matrix(rnorm(N*n), N)
-  u<-matrix(rnorm(N*2), N) %*% chol(U)
+  u<-matrix(rnorm(N*2), N) %*% chol(parameters$U)
   data_2a$y1 <- true_betas[1] + true_betas[2]*data_2a$x + true_betas[3]*data_2a$Period+rep(u[,1], each=n)+as.vector(t(errors1))
   data_2a$y2<- true_betas[4]+true_betas[5]*data_2a$x+true_betas[6]*data_2a$Period+rep(u[,2], each=n)+as.vector(t(errors2))
-  return(list(data=data_2a, true_cov=cov(u)))
+  data_2a$x[data_2a$x_measured==0]<-NA
+  data<-data_2a[data_2a$observed==1,]
+  return(list(data=data, true_cov=cov(u)))
 }
 
-make_model_2B<-function(true_betas, U, Sigma, N, n){
+make_model_2B<-function(true_betas, parameters, N, n, p1, p2, CV){
   ################################################################################
   #Random intercept & dependent errors
   ################################################################################
-  set.seed(2022)
-  data_2b<- data.frame(
+  set.seed(2022+CV)
+  data_2b <- data.frame(
     id=rep(1:N, each=n),
-    x=rnorm(N*n), 
+    x=rnorm(N*n),
     Period=rep(0:(n-1), times=N), 
-    Period2=factor(rep(0:(n-1), times=N)))
-  errors <- matrix(rnorm(N*2*n), N) %*% chol(Sigma)
-  u<-matrix(rnorm(N*2), N) %*% chol(U)
+    Period2=factor(rep(0:(n-1), times=N)),
+    observed=rbern(N*n, p1),
+    x_measured=rbern(N*n, p2))
+  errors <- matrix(rnorm(N*2*n), N) %*% chol(parameters$Sigma)
+  u<-matrix(rnorm(N*2), N) %*% chol(parameters$U)
   data_2b$y1 <- true_betas[1] + true_betas[2]*data_2b$x +true_betas[3]*data_2b$Period+rep(u[,1], each=n)+as.vector(t(errors[,1:n]))
   data_2b$y2<- true_betas[4]+true_betas[5]*data_2b$x+true_betas[6]*data_2b$Period+rep(u[,2], each=n)+as.vector(t(errors[,(n+1):(2*n)]))
-  return(list(data=data_2b, true_cov=cov(u), true_errors=cov(errors)))
+  data_2b$x[data_2b$x_measured==0]<-NA
+  data<-data_2b[data_2b$observed==1,]
+  return(list(data=data, true_cov=cov(u), true_errors=cov(errors)))
 }
 
-make_model_2C<-function(true_betas, U, N, n){
+make_model_2C<-function(true_betas, parameters, N, n, p1, p2, CV){
   ################################################################################
   #Random slope & intercept: Dependent
   ################################################################################
-  set.seed(2022)
+  set.seed(2022+CV)
   data_2c <- data.frame(
     id=rep(1:N, each=n),
-    x=rnorm(N*n),  
+    x=rnorm(N*n),
     Period=rep(0:(n-1), times=N), 
-    Period2=factor(rep(0:(n-1), times=N)))
+    Period2=factor(rep(0:(n-1), times=N)),
+    observed=rbern(N*n, p1),
+    x_measured=rbern(N*n, p2))
   
   errors1 <- matrix(rnorm(N*n), N)
   errors2 <- matrix(rnorm(N*n), N)
-  u<-matrix(rnorm(N*2*2), N) %*% chol(U)
+  u<-matrix(rnorm(N*2*2), N) %*% chol(parameters$U)
   data_2c$y1 <- true_betas[1] +rep(u[,1], each=n)+ true_betas[2]*data_2c$x + true_betas[3]*data_2c$Period+
     rep(u[,3], each=n)*data_2c$Period+as.vector(t(errors1))
   data_2c$y2<- true_betas[4]+rep(u[,2], each=n)+true_betas[5]*data_2c$x+true_betas[6]*data_2c$Period+
     rep(u[,4], each=n)*data_2c$Period+as.vector(t(errors2))
-  return(list(data=data_2c, true_cov=cov(u)))
+  data_2c$x[data_2c$x_measured==0]<-NA
+  data<-data_2c[data_2c$observed==1,]
+  return(list(data=data, true_cov=cov(u)))
 }
 
-make_model_3A<-function(true_betas, U1, U2, gamma, N, n){
+make_model_3A<-function(true_betas, parameters, N, n, p1, p2, CV){
   ################################################################################
   #Random slope & intercept: Dependent
   ################################################################################
-  set.seed(2022)
-  true_betas[4:6]<-true_betas[4:6]-gamma*true_betas[1:3]
+  set.seed(2022+CV)
+  true_betas[4:6]<-true_betas[4:6]-parameters$gamma*true_betas[1:3]
   data_3a <- data.frame(
     id=rep(1:N, each=n),
     x=rnorm(N*n),
     Period=rep(0:(n-1), times=N), 
-    Period2=factor(rep(0:(n-1), times=N)))
+    Period2=factor(rep(0:(n-1), times=N)),
+    observed=rbern(N*n, p1),
+    x_measured=rbern(N*n, p2))
   
   errors1 <- matrix(rnorm(N*n), N)
   errors2 <- matrix(rnorm(N*n), N)
-  u1<-matrix(rnorm(N*2), N) %*% chol(U1)
-  u2<-matrix(rnorm(N*2), N) %*% chol(U2)
+  u1<-matrix(rnorm(N*2), N) %*% chol(parameters$U1)
+  u2<-matrix(rnorm(N*2), N) %*% chol(parameters$U2)
   m_3a<-true_betas[1]+rep(u1[,1], each=n)+true_betas[2]*data_3a$x+(true_betas[3]+rep(u1[,2], each=n))*data_3a$Period
   data_3a$y1 <-  m_3a+as.vector(t(errors1))
-  data_3a$y2<- gamma*(m_3a)+true_betas[4]+rep(u2[,1], each=n)+true_betas[5]*data_3a$x+(true_betas[6]+rep(u2[,2], each=n))*data_3a$Period+as.vector(t(errors2))
-  return(list(data=data_3a, true_cov_u1=cov(u1), true_cov_u2=cov(u2)))
+  data_3a$y2<- parameters$gamma*(m_3a)+true_betas[4]+rep(u2[,1], each=n)+true_betas[5]*data_3a$x+(true_betas[6]+rep(u2[,2], each=n))*data_3a$Period+as.vector(t(errors2))
+  data_3a$x[data_3a$x_measured==0]<-NA
+  data<-data_3a[data_3a$observed==1,]
+  return(list(data=data, true_cov_u1=cov(u1), true_cov_u2=cov(u2)))
 }
 
-make_model_3B<-function(true_betas, U1, U2, gamma1, gamma2, N, n){
+make_model_3B<-function(true_betas, parameters, N, n, p1, p2, CV){
   ################################################################################
   #Random slope & intercept: Dependent, cloned apart
   ################################################################################
-  set.seed(2022)
+  set.seed(2022+CV)
   data_3b <- data.frame(
     id=rep(1:N, each=n),
     x=rnorm(N*n),
     Period=rep(0:(n-1), times=N), 
-    Period2=factor(rep(0:(n-1), times=N)))
+    Period2=factor(rep(0:(n-1), times=N)),
+    observed=rbern(N*n, p1),
+    x_measured=rbern(N*n, p2))
   errors1 <- matrix(rnorm(N*n), N)
   errors2 <- matrix(rnorm(N*n), N)
-  u1<-matrix(rnorm(N*2), N) %*% chol(U1)
-  u2<-matrix(rnorm(N*2), N) %*% chol(U2)
+  u1<-matrix(rnorm(N*2), N) %*% chol(parameters$U1)
+  u2<-matrix(rnorm(N*2), N) %*% chol(parameters$U2)
   data_3b$y1 <-  true_betas[1]+rep(u1[,1], each=n)+true_betas[2]*data_3b$x+(true_betas[3]+rep(u1[,2], each=n))*data_3b$Period+as.vector(t(errors1))
-  data_3b$y2<- gamma1*rep(u1[,1], each=n)+true_betas[4]+rep(u2[,1], each=n)+true_betas[5]*data_3b$x+
-    (true_betas[6]+rep(u2[,2], each=n)+gamma2*rep(u1[,2], each=n))*data_3b$Period+as.vector(t(errors2))
-  return(list(data=data_3b, true_cov_u1=cov(u1), true_cov_u2=cov(u2)))
+  data_3b$y2<- parameters$gamma1*rep(u1[,1], each=n)+true_betas[4]+rep(u2[,1], each=n)+true_betas[5]*data_3b$x+
+    (true_betas[6]+rep(u2[,2], each=n)+parameters$gamma2*rep(u1[,2], each=n))*data_3b$Period+as.vector(t(errors2))
+  data_3b$x[data_3b$x_measured==0]<-NA
+  data<-data_3b[data_3b$observed==1,]
+  return(list(data=data, true_cov_u1=cov(u1), true_cov_u2=cov(u2)))
 }
 
 
@@ -166,7 +197,7 @@ make_model_3B<-function(true_betas, U1, U2, gamma1, gamma2, N, n){
 #              1.5,4),2, byrow=TRUE)
 # U0t<-matrix(c(0,0,
 #               0,0),2, byrow=TRUE)
-# U<-rbind(cbind(U0, U0t), cbind(t(U0t), Ut))
+# U<-rbind(cbind(U0, U0t), cbind(t(U0t), U0t))
 # #Model 3A Special parameters
 # U1<-matrix(c(2,0,
 #              0,3),2, byrow=TRUE)
@@ -180,4 +211,10 @@ make_model_3B<-function(true_betas, U1, U2, gamma1, gamma2, N, n){
 #              1.5,4),2, byrow=TRUE)
 # gamma1<-0.45
 # gamma2<-1.2
-
+# 
+# make_model_1A(true_betas, Sigma, N, n)
+# make_model_2A(true_betas, U_0, N, n)
+# make_model_2B(true_betas, U_0, Sigma, N, n)
+# make_model_2C(true_betas, U, N, n)
+# make_model_3A(true_betas, U1, U2, gamma, N, n)
+# make_model_3B(true_betas, U1, U2, gamma1, gamma2, N, n)

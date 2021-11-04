@@ -28,7 +28,7 @@ rownames(coefficients_2b$coefficients)<-c('beta_0^1', 'beta_x^1', 'beta_t^1', 'b
 
 
 ################################################################################
-#Model 2b: Random intercept and correlated residuals
+#Model 2b Make data: Both random intercept and correlated terms within 1 variable
 ################################################################################
 set.seed(2021)
 ### Total of N individuals
@@ -55,6 +55,7 @@ data_2b$y2<- true_betas[4]+true_betas[5]*data_2b$x+true_betas[6]*data_2b$Period+
 
 #This is very important!!!!!
 data_2b<-rbind(data_2b[data_2b$Period==0,], data_2b[data_2b$Period==1,])
+
 
 
 ################################################################################

@@ -27,7 +27,7 @@ coefficients_2c<-list(coefficients=data.frame(true= c(true_betas),
 rownames(coefficients_2c$coefficients)<-c( 'beta_0^1', 'beta_x^1','beta_t^1', 'beta_0^2', 'beta_x^2','beta_t^2')
 
 ################################################################################
-#Model 2c1: Random slope & intercept, uncorrelated
+#Make data 2c1: Random slope & intercept, uncorrelated
 ################################################################################
 set.seed(2022)
 ### Total of N individuals

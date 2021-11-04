@@ -28,7 +28,7 @@ coefficients_2a<-data.frame(true= c(true_betas, diag(U), U[1,2]),
 rownames(coefficients_2a)<-c('beta_0^1', 'beta_x^1', 'beta_t^1', 'beta_0^2', 'beta_x^2', 'beta_t^2', 'u_1', 'u_2', 'u_12')
 
 ################################################################################
-#Model 2: Only random intercept
+#Model 2 Make data: Only random intercept, uncorrelated errors
 ################################################################################
 set.seed(2022)
 ### Total of N individuals
