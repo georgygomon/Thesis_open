@@ -34,7 +34,6 @@ fit_model_0<-function(data, N, n){
                 waic=NA, pit=NA,
                 cpo=NA, model_specific=list(cov_random_1=NA, cov_random_2=NA)))
   }
-  cat('Passed the shit \n')
   coefficients_0<-final_model_0$summary.fixed[,1]
   
   #Random effects covariance Y1
